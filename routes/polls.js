@@ -7,6 +7,7 @@ function generateRollingWeeklyOptions() {
   const options = [];
   const today = new Date();
   
+  // Start from tomorrow (i = 1 means +1 day from today)
   for (let i = 1; i <= 7; i++) {
     const date = new Date(today);
     date.setDate(today.getDate() + i);
@@ -21,6 +22,7 @@ function generateRollingWeeklyOptions() {
     });
   }
   
+  console.log(`Generated rolling dates starting from tomorrow: ${options[0].date} to ${options[6].date}`);
   return options;
 }
 
