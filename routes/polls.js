@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const Poll = require('../models/poll');
+const Poll = require('../models/Poll');
 
 // Helper function to generate rolling 7-day options starting from tomorrow
 function generateRollingWeeklyOptions() {
