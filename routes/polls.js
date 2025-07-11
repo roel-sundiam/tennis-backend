@@ -187,8 +187,24 @@ router.post('/:id/vote', async (req, res) => {
 
     const { playerName, playerId, optionIds } = req.body;
     
-    if (!playerId || !optionIds || optionIds.length === 0) {
+    if (!playerId || !optionIds) {
       return res.status(400).json({ message: 'Player ID and option IDs are required' });
+    }
+
+    // Handle case where user wants to remove all votes (empty optionIds array)
+    if (optionIds.length === 0) {
+      // Find and remove existing vote for this player
+      const existingVoteIndex = poll.votes.findIndex(vote => vote.playerId === playerId);
+      
+      if (existingVoteIndex !== -1) {
+        poll.votes.splice(existingVoteIndex, 1);
+        // Update totalVotes (recalculate based on current votes array)
+        poll.totalVotes = poll.votes.reduce((sum, vote) => sum + vote.optionIds.length, 0);
+        const updatedPoll = await poll.save();
+        return res.status(200).json({ message: 'All votes removed successfully!', poll: updatedPoll });
+      } else {
+        return res.status(200).json({ message: 'No votes to remove.', poll: poll });
+      }
     }
 
     // Sort optionIds for consistent comparison
