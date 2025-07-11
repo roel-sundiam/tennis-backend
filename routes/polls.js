@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const Poll = require('../models/poll');
+const Poll = require('../models/Poll');
 
 // Helper function to generate rolling 7-day options starting from tomorrow
 function generateRollingWeeklyOptions() {
@@ -53,11 +53,9 @@ router.get('/', async (req, res) => {
     let updatedAny = false;
     
     for (const poll of polls) {
-      const needsUpdate = true; // Force update to apply timezone fix
-      
-      // const needsUpdate = !poll.options || 
-      //                    poll.options.length === 0 || 
-      //                    poll.options[0].date !== currentRollingOptions[0].date;
+      const needsUpdate = !poll.options || 
+                         poll.options.length === 0 || 
+                         poll.options[0].date !== currentRollingOptions[0].date;
       
       if (needsUpdate) {
         console.log(`Updating poll ${poll.id} with rolling dates: ${currentRollingOptions[0].date} to ${currentRollingOptions[6].date}`);
@@ -95,13 +93,10 @@ router.get('/:id', async (req, res) => {
     // Auto-refresh poll options to current rolling 7-day window
     const currentRollingOptions = generateRollingWeeklyOptions();
     
-    // FORCE UPDATE: Always update to ensure timezone fix is applied
-    const needsUpdate = true; // Force update to apply timezone fix
-    
     // Check if the poll dates need updating (compare first date)
-    // const needsUpdate = !poll.options || 
-    //                    poll.options.length === 0 || 
-    //                    poll.options[0].date !== currentRollingOptions[0].date;
+    const needsUpdate = !poll.options || 
+                       poll.options.length === 0 || 
+                       poll.options[0].date !== currentRollingOptions[0].date;
                        
     // Also check if any votes reference dates not in the current rolling window
     const hasStaleVotes = poll.votes && poll.votes.some(vote => 
