@@ -5,7 +5,18 @@ const Poll = require('../models/poll');
 // Helper function to generate rolling 7-day options starting from tomorrow
 function generateRollingWeeklyOptions() {
   const options = [];
-  const today = new Date();
+  
+  // Get current date in Philippine timezone (UTC+8)
+  const now = new Date();
+  console.log(`Server UTC time: ${now.toISOString()}`);
+  
+  // Create date in Philippine timezone
+  const philippineTime = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Manila"}));
+  console.log(`Philippine time: ${philippineTime.toISOString()}`);
+  
+  // Get today's date in Philippine timezone
+  const today = new Date(philippineTime.getFullYear(), philippineTime.getMonth(), philippineTime.getDate());
+  console.log(`Today in Philippines: ${today.toISOString().split('T')[0]}`);
   
   // Start from tomorrow (i = 1 means +1 day from today)
   for (let i = 1; i <= 7; i++) {
@@ -23,12 +34,18 @@ function generateRollingWeeklyOptions() {
   }
   
   console.log(`Generated rolling dates starting from tomorrow: ${options[0].date} to ${options[6].date}`);
+  console.log(`Full options array:`, JSON.stringify(options, null, 2));
   return options;
 }
 
 // Get all polls with auto-refreshed rolling dates
 router.get('/', async (req, res) => {
   try {
+    // Add cache-busting headers
+    res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+    
     const polls = await Poll.find();
     
     // Auto-refresh dates for all polls
@@ -36,9 +53,11 @@ router.get('/', async (req, res) => {
     let updatedAny = false;
     
     for (const poll of polls) {
-      const needsUpdate = !poll.options || 
-                         poll.options.length === 0 || 
-                         poll.options[0].date !== currentRollingOptions[0].date;
+      const needsUpdate = true; // Force update to apply timezone fix
+      
+      // const needsUpdate = !poll.options || 
+      //                    poll.options.length === 0 || 
+      //                    poll.options[0].date !== currentRollingOptions[0].date;
       
       if (needsUpdate) {
         console.log(`Updating poll ${poll.id} with rolling dates: ${currentRollingOptions[0].date} to ${currentRollingOptions[6].date}`);
@@ -61,6 +80,13 @@ router.get('/', async (req, res) => {
 // Get poll by ID with auto-refreshed rolling dates
 router.get('/:id', async (req, res) => {
   try {
+    console.log(`🔵 GET /polls/${req.params.id} - Starting poll request`);
+    
+    // Add cache-busting headers
+    res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+    
     const poll = await Poll.findOne({ id: req.params.id });
     if (!poll) {
       return res.status(404).json({ message: 'Poll not found' });
@@ -69,10 +95,13 @@ router.get('/:id', async (req, res) => {
     // Auto-refresh poll options to current rolling 7-day window
     const currentRollingOptions = generateRollingWeeklyOptions();
     
+    // FORCE UPDATE: Always update to ensure timezone fix is applied
+    const needsUpdate = true; // Force update to apply timezone fix
+    
     // Check if the poll dates need updating (compare first date)
-    const needsUpdate = !poll.options || 
-                       poll.options.length === 0 || 
-                       poll.options[0].date !== currentRollingOptions[0].date;
+    // const needsUpdate = !poll.options || 
+    //                    poll.options.length === 0 || 
+    //                    poll.options[0].date !== currentRollingOptions[0].date;
                        
     // Also check if any votes reference dates not in the current rolling window
     const hasStaleVotes = poll.votes && poll.votes.some(vote => 
