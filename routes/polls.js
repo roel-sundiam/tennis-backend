@@ -187,7 +187,10 @@ router.post('/:id/vote', async (req, res) => {
 
     const { playerName, playerId, optionIds } = req.body;
     
-    if (!playerId || !optionIds) {
+    console.log('🔵 Vote submission request:', { playerName, playerId, optionIds, optionIdsType: typeof optionIds, optionIdsLength: optionIds?.length });
+    
+    if (!playerId || optionIds === undefined || optionIds === null) {
+      console.log('❌ Validation failed:', { playerId: !!playerId, optionIds, optionIdsUndefined: optionIds === undefined, optionIdsNull: optionIds === null });
       return res.status(400).json({ message: 'Player ID and option IDs are required' });
     }
 
@@ -306,6 +309,31 @@ router.get('/:id/teams', async (req, res) => {
     res.json({ generatedTeams });
   } catch (error) {
     console.error('❌ Error getting teams:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Clear all generated teams for a poll (called when votes change)
+router.delete('/:id/teams', async (req, res) => {
+  try {
+    console.log('🔵 DELETE /polls/:id/teams called with pollId:', req.params.id);
+    
+    const poll = await Poll.findOne({ id: req.params.id });
+    if (!poll) {
+      console.log('❌ Poll not found with id:', req.params.id);
+      return res.status(404).json({ message: 'Poll not found' });
+    }
+
+    const beforeCount = poll.generatedTeams ? poll.generatedTeams.length : 0;
+    poll.generatedTeams = [];
+    await poll.save();
+    
+    console.log(`🗑️ Cleared all generated teams: ${beforeCount} -> 0`);
+    console.log('✅ All teams cleared successfully for poll:', req.params.id);
+    
+    res.json({ message: 'All generated teams cleared successfully', clearedCount: beforeCount });
+  } catch (error) {
+    console.error('❌ Error clearing teams:', error);
     res.status(500).json({ message: error.message });
   }
 });
