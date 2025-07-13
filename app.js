@@ -37,6 +37,11 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.json({ status: 'OK', timestamp: new Date().toISOString(), version: '1.0.0' });
+});
+
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
 app.use('/players', playersRouter);
